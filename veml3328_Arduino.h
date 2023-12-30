@@ -30,8 +30,13 @@ public:
     // returns same errors as WireUtils::read16
     uint8_t getDeviceId(uint8_t* error = NULL);
 
-    // all set(CS | DG | Gain | Sens | IT | AF | TRIG) functions return the same errors as WireUtils::write16Confirm
-    // all get(CS | DG | Gain | Sens | IT | AF | TRIG) functions write the same errors as WireUtils::read16 to the error parameter
+
+    /*
+
+        all set(CS | DG | Gain | Sens | IT | AF | TRIG) functions return the same errors as WireUtils::write16Confirm
+        all get(CS | DG | Gain | Sens | IT | AF | TRIG) functions write the same errors as WireUtils::read16 to the error parameter
+    
+    */
 
     // Channel Selection (named "SD_ALS only" in datasheet)
     enum {
