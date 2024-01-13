@@ -6,6 +6,11 @@
 
 // https://www.vishay.com/docs/84968/veml3328.pdf
 
+#define VEML3328_VERSION "1.0.0"
+#define VEML3328_VERSION_MAJOR 1
+#define VEML3328_VERSION_MINOR 0
+#define VEML3328_VERSION_PATCH 0
+
 #define VEML3328_DEF_ADDR 0x10
 
 class VEML3328 {
