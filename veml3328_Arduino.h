@@ -15,8 +15,8 @@
 
 class VEML3328 {
 private:
-    uint8_t device_addr; // i2c address of the device
-    TwoWire* wire;   // i2c interface
+    uint8_t device_addr = 0; // i2c address of the device
+    TwoWire* wire = NULL;   // i2c interface
 public:
 
     VEML3328();
@@ -108,42 +108,42 @@ public:
 
         // Shutdown/Awake
         void setSD(VEML3328::SD_t value);
-        VEML3328::SD_t getSD(void);
+        VEML3328::SD_t getSD(void) const;
 
         // Channel Selection (named "SD_ALS only" in datasheet)
         void setCS(VEML3328::CS_t value);
-        VEML3328::CS_t getCS(void);
+        VEML3328::CS_t getCS(void) const;
 
         // Differential Gain
         void setDG(VEML3328::DG_t value);
-        VEML3328::DG_t getDG(void);
+        VEML3328::DG_t getDG(void) const;
 
         // Gain
         void setGain(VEML3328::Gain_t value);
-        VEML3328::Gain_t getGain(void);
+        VEML3328::Gain_t getGain(void) const;
 
         // Sensitivity
         void setSens(VEML3328::Sens_t value);
-        VEML3328::Sens_t getSens(void);
+        VEML3328::Sens_t getSens(void) const;
 
         // Integration time
         void setIT(VEML3328::IT_t value);
-        VEML3328::IT_t getIT(void);
+        VEML3328::IT_t getIT(void) const;
 
         // Mode
         void setMode(VEML3328::Mode_t value);
-        VEML3328::Mode_t getMode(void);
+        VEML3328::Mode_t getMode(void) const;
 
         // Trigger
         //   setting it to Trig_Trigger triggers a measurement in AF mode, the bit gets reset (=Trig_NoTrigger) when the measurement is complete 
         //   (so setting it to Trig_NoTrigger doesnt really make sense)
         void setTrig(VEML3328::Trig_t value);
-        VEML3328::Trig_t getTrig(void);
+        VEML3328::Trig_t getTrig(void) const;
 
     protected:
         // helpers
         void setX(uint8_t value, uint16_t mask, uint8_t shift);
-        uint8_t getX(uint16_t mask, uint8_t shift);
+        uint8_t getX(uint16_t mask, uint8_t shift) const;
     };
 
     // returns the same errors as WireUtils::write16Confirm
