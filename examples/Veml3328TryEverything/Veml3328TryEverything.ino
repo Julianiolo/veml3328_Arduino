@@ -71,7 +71,7 @@ static void print_config(void) {
     uint8_t error = 0;
     const VEML3328::Config config = veml3328.getConfig(&error);
     if(error != 0) {
-        Serial.printf("Error: could not get config of veml3328: %d\n", ret);
+        Serial.printf("Error: could not get config of veml3328: %d\n", error);
         return;
     }
 
