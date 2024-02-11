@@ -200,7 +200,7 @@ VEML3328::Config::meas_ctx_t VEML3328::autoConfig(VEML3328::channel_t channel, u
         uint8_t i = 0;
         while(true) {
             const uint32_t v_s = v * confs[i+1].sens;
-            if(v_s > 0xe000  /* <- this value is pretty arbitrary */ || i+2 >= 16) {
+            if(v_s > (uint32_t)(0xffff*0.8)  /* <- this value is pretty arbitrary */ || i+2 >= 16) {
                 break;
             }
             i++;
