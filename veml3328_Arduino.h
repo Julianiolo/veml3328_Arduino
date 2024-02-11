@@ -5,6 +5,7 @@
 #include <Wire.h>
 
 // https://www.vishay.com/docs/84968/veml3328.pdf
+// https://www.vishay.com/docs/80010/designingveml3328.pdf
 
 #define VEML3328_VERSION "1.0.0"
 #define VEML3328_VERSION_MAJOR 1
@@ -53,7 +54,7 @@ public:
     enum {
         DG_1x = 0,  // (default)
         DG_2x = 1,
-        DG_3x = 2
+        DG_4x = 2
     };
     typedef uint8_t DG_t;
 
@@ -97,13 +98,14 @@ public:
     typedef uint8_t Trig_t;
 
     // this class allows writing a complete config to the device at once (since everything is in the same register)
+    // a config only ever changes the values set by a set* function, all other values are left unchanged
     class Config {
     public:
-        uint16_t value; // dont use unless you know what you're doing
-        uint16_t mask;  // dont use unless you know what you're doing
+        uint16_t value = 0; // dont use unless you know what you're doing
+        uint16_t mask  = 0; // dont use unless you know what you're doing
 
         /*
-            all get* functions return (uint8_t)-1 (so 255) if no value is present (mask is not set for this value)
+            all get* functions return (uint8_t)-1 (so 255) if no value is present (== mask is not set for this value)
         */
 
         // Shutdown/Awake
@@ -140,6 +142,20 @@ public:
         void setTrig(VEML3328::Trig_t value);
         VEML3328::Trig_t getTrig(void) const;
 
+        /*
+            meas_ctx_t is a value that stores all the context for a measurement to be able to calculate a lux value from the raw counts
+            Bits:
+                  7: Error
+                6-5: DG
+                4-3: Gain
+                  2: Sens
+                1-0: IT
+        */
+        typedef uint8_t meas_ctx_t;
+
+        meas_ctx_t toCtx(void) const;
+        static Config fromCtx(meas_ctx_t ctx);
+
     protected:
         // helpers
         void setX(uint8_t value, uint16_t mask, uint8_t shift);
@@ -161,8 +177,20 @@ public:
     typedef uint8_t channel_t;
 
     // returns same errors as WireUtils::read16 + 8: invalid channel number
-    uint16_t getChannelValue(VEML3328::channel_t channel, uint8_t* error);
+    uint16_t getChannelValue(VEML3328::channel_t channel, uint8_t* error = NULL);
 
+
+    VEML3328::Config::meas_ctx_t autoConfig(VEML3328::channel_t channel = CHANNEL_CLEAR, uint8_t* error = NULL);
+
+    
+    // this converts a measurement value and the used settings for that measurement into a universal value independent of settings used
+    // equivalent to (theoredical) value at settings DG=4x GAIN=4x SENS=1x IT=400ms
+    // multiply by 0.003 lux to get lux value (or just use toFloat)
+    static uint32_t toUniversalUnit(VEML3328::Config::meas_ctx_t ctx, uint16_t value);
+    static uint32_t toUniversalUnit(VEML3328::Config config, uint16_t value);
+
+    // this needs the value calculated by toUniversalUnit as input
+    static float toFloat(uint32_t universal_unit_value);
 private:
     uint16_t read16(const uint8_t register_address, uint8_t* error = NULL);
     uint8_t write16(const uint8_t register_address, const uint16_t data, uint16_t mask = 0xffff);

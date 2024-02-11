@@ -2,8 +2,8 @@
 
 #include "WireUtils.h"
 
-#define VEML3328_CONFIG_REG_ADDR 0x0
-#define VEML3328_DEVICEID_REG_ADDR 0x0
+#define VEML3328_CONFIG_REG_ADDR 0x00
+#define VEML3328_DEVICEID_REG_ADDR 0x0c
 
 #define VEML3328_CONFIG_SHUTDOWN_MASK 0b1000000000000001
 #define VEML3328_CONFIG_CS_MASK       0b0100000000000000
@@ -122,6 +122,29 @@ VEML3328::Trig_t VEML3328::Config::getTrig(void) const {
     return this->getX(VEML3328_CONFIG_TRIG_MASK, VEML3328_CONFIG_TRIG_SHIFT);
 }
 
+VEML3328::Config::meas_ctx_t VEML3328::Config::toCtx(void) const {
+    const uint8_t dg = getDG();
+    if(dg == (uint8_t)-1)   return 0b10000000;
+    const uint8_t gain = getGain();
+    if(gain == (uint8_t)-1) return 0b10000001;
+    const uint8_t sens = getSens();
+    if(sens == (uint8_t)-1) return 0b10000010;
+    const uint8_t it = getIT();
+    if(it == (uint8_t)-1)   return 0b10000011;
+    return (dg << 5) | (gain << 3) | (sens << 2) | it;
+}
+VEML3328::Config VEML3328::Config::fromCtx(meas_ctx_t ctx) {
+    if(ctx & 0b10000000) return VEML3328::Config();
+
+    Config config;
+    config.setDG((ctx >> 5) & 0b11);
+    config.setGain((ctx >> 3) & 0b11);
+    config.setSens((ctx >> 2) & 0b1);
+    config.setIT(ctx & 0b11);
+
+    return config;
+}
+
 
 uint8_t VEML3328::setConfig(VEML3328::Config value) {
     return this->write16Confirm(VEML3328_CONFIG_REG_ADDR, value.value, value.mask);
@@ -141,6 +164,76 @@ uint16_t VEML3328::getChannelValue(VEML3328::channel_t channel, uint8_t* error) 
     }
 
     return this->read16(channel, error);
+}
+
+VEML3328::Config::meas_ctx_t VEML3328::autoConfig(VEML3328::channel_t channel, uint8_t* error = NULL) {
+    {
+        Config config;
+        config.setDG(DG_1x);
+        config.setGain(Gain_0_5x);
+        config.setSens(Sens_LOW);
+        config.setIT(IT_100ms);
+
+        uint8_t ret = setConfig(config);
+        if(ret != 0) {
+            if(error != NULL) *error = ret;
+            return -1;
+        }
+    }
+
+    uint8_t err = 0;
+    const uint16_t v = getChannelValue(channel, &err);
+    if(err != 0) {
+        if(error != NULL) *error = err + 16;
+        return -1;
+    }
+
+    struct CONF{
+        uint16_t sens; // normalized sensitivity (relative to lowest sensitivity)
+        Config::meas_ctx_t ctx;
+    };
+
+    // see scripts/sensitivity.py
+    const CONF confs[16] = {{1, 0x4}, {2, 0xc}, {3, 0x0}, {4, 0x14}, {6, 0x8}, {8, 0x1c}, {12, 0x10}, {16, 0x1d}, {24, 0x18}, {32, 0x1e}, {48, 0x38}, {64, 0x1f}, {96, 0x58}, {192, 0x59}, {384, 0x5a}, {768, 0x5b}};
+
+    if(v > 0) {
+        uint8_t i = 0;
+        while(true) {
+            const uint32_t v_s = v * confs[i+1].sens;
+            if(v_s > 0xe000  /* <- this value is pretty arbitrary */ || i+2 >= 16) {
+                break;
+            }
+            i++;
+        }
+        return confs[i].ctx;
+    }else{
+        return confs[15].ctx;
+    }
+}
+
+uint32_t VEML3328::toUniversalUnit(VEML3328::Config::meas_ctx_t ctx, uint16_t value) {
+    return toUniversalUnit(Config::fromCtx(ctx), value);
+}
+uint32_t VEML3328::toUniversalUnit(VEML3328::Config config, uint16_t value) {
+    const uint8_t dg = config.getDG();
+    if(dg == (uint8_t)-1)   return -1;
+    const uint8_t gain = config.getGain();
+    if(gain == (uint8_t)-1) return -2;
+    const uint8_t sens = config.getSens();
+    if(sens == (uint8_t)-1) return -3;
+    const uint8_t it = config.getIT();
+    if(it == (uint8_t)-1)   return -4;
+    
+    const uint8_t mult_dg[] = {4,2,1};
+    const uint8_t mult_gain[] = {8,4,2,1};
+    const uint8_t mult_sens[] = {3,1};
+    const uint8_t mult_it[] = {8,4,2,1};
+    
+    return (uint32_t)value * (uint32_t)mult_dg[dg] * (uint32_t)mult_gain[gain] * (uint32_t)mult_sens[sens] * (uint32_t)mult_it[it];
+}
+
+float VEML3328::toFloat(uint32_t universal_unit_value) {
+    return (float)universal_unit_value * 0.003;
 }
 
 // helpers
