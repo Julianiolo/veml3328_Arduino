@@ -57,7 +57,7 @@ for var in itertools.product(gains, dgs, its, senss):  # iterate over all possib
             best[conf.value] = conf
 
 
-for k,v in best.items():
+for k,v in sorted(best.items()):
     print(f"  {k:6.2f}: {v}")
 print(f"len(best) = {len(best)}")
 
