@@ -143,7 +143,7 @@ public:
         VEML3328::Trig_t getTrig(void) const;
 
         /*
-            meas_ctx_t is a value that stores all the context for a measurement to be able to calculate a lux value from the raw counts
+            meas_ctx_t is a value that stores all the context for a measurement to be able to calculate a lux value from the raw counts; see VEML3328::toUniversalUnit()
             Bits:
                   7: Error
                 6-5: DG
@@ -179,7 +179,11 @@ public:
     // returns same errors as WireUtils::read16 + 8: invalid channel number
     uint16_t getChannelValue(VEML3328::channel_t channel, uint8_t* error = NULL);
 
+    /*
+        Automatically determine a config by taking a single measurement
 
+        returns same errors as setConfig() and getChannelValue() offset by 16
+    */
     VEML3328::Config::meas_ctx_t autoConfig(VEML3328::channel_t channel = CHANNEL_CLEAR, uint8_t* error = NULL);
 
     
