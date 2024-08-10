@@ -57,13 +57,16 @@ for var in itertools.product(gains, dgs, its, senss):  # iterate over all possib
             best[conf.value] = conf
 
 
-for k,v in sorted(best.items()):
-    print(f"  {k:6.2f}: {v}")
-print(f"len(best) = {len(best)}")
+
 
 min_best = min(best.keys())
 best_norm = {k/min_best : v for k, v in best.items()}  # normalized sensitivities (relative to lowest sensitivity)
 
-initializer = [f"{{{int(k)}, {hex(v.to_ctx())}}}" for k,v in sorted(best_norm.items())]
-initializer_list = ", ".join(initializer)
-print(f"const CONF confs[{len(initializer)}] = {{{initializer_list}}};")
+if __name__ == "__main__":
+    for k,v in sorted(best.items()):
+        print(f"  {k:6.2f}: {v}")
+    print(f"len(best) = {len(best)}")
+
+    initializer = [f"{{{int(k)}, {hex(v.to_ctx())}}}" for k,v in sorted(best_norm.items())]
+    initializer_list = ", ".join(initializer)
+    print(f"const CONF confs[{len(initializer)}] = {{{initializer_list}}};")
